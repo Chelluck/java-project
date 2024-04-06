@@ -1,0 +1,13 @@
+version: "3.7"
+services:
+  frontend:
+    image: jetty
+    volumes:
+      - ./:/app_jetty
+    ports:
+      - 8080:8080
+      - 443:443
+    command: sh -c "java -jar /app_jetty/server.jar"
+
+
+
