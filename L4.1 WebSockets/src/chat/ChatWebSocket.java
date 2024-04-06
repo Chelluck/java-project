@@ -31,7 +31,8 @@ public class ChatWebSocket {
 
     @OnWebSocketMessage
     public void onMessage(String data) {
-        chatService.sendMessage(data);
+        chatService.sendMessageToMe(data,this);
+        chatService.sendMessage(data,this);
     }
 
     @OnWebSocketClose

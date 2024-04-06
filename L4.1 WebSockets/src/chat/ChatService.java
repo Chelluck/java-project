@@ -18,15 +18,24 @@ public class ChatService {
         this.webSockets = Collections.newSetFromMap(new ConcurrentHashMap<>());
     }
 
-    public void sendMessage(String data) {
+    public void sendMessage(String data,ChatWebSocket socket) {
         for (ChatWebSocket user : webSockets) {
             try {
-                user.sendString(data);
+                if(!socket.equals(user)){
+                    user.sendString(data);
+                }
             } catch (Exception e) {
                 System.out.println(e.getMessage());
             }
         }
     }
+
+    public void sendMessageToMe(String data,ChatWebSocket socket){
+        if(webSockets.contains(socket)){
+            socket.sendString(data);
+        }
+    }
+
 
     public void add(ChatWebSocket webSocket) {
         webSockets.add(webSocket);
