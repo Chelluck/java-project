@@ -12,6 +12,7 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import servlets.AdminPageServlet;
 import servlets.HomePageServlet;
 
 import javax.management.MBeanServer;
@@ -40,7 +41,7 @@ public class Main {
 
         logger.info("Starting at http://127.0.0.1:" + portString);
 
-        AccountServerI accountServer = new AccountServer(1);
+        AccountServerI accountServer = new AccountServer(10);
 
         AccountServerControllerMBean serverStatistics = new AccountServerController(accountServer);
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
@@ -50,6 +51,7 @@ public class Main {
         Server server = new Server(port);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.addServlet(new ServletHolder(new HomePageServlet(accountServer)), HomePageServlet.PAGE_URL);
+        context.addServlet(new ServletHolder(new AdminPageServlet(accountServer)), AdminPageServlet.PAGE_URL);
 
         ResourceHandler resource_handler = new ResourceHandler();
         resource_handler.setDirectoriesListed(true);
