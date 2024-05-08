@@ -1,56 +1,64 @@
-import java.util.Date;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 
-/**
- * @author v.chibrikov
- *         <p>
- *         Пример кода для курса на https://stepic.org/
- *         <p>
- *         Описание курса и лицензия: https://github.com/vitaly-chibrikov/stepic_java_webserver
- */
+
 public class Main {
-    private static final int HUNDRED_MILLION = 100_000_000;
-    private static final int THREADS_NUMBER = 2;
 
-    public static void main(String[] args) throws InterruptedException, ExecutionException {
-        ExecutorService executorService = Executors.newFixedThreadPool(THREADS_NUMBER);
+    public static void main(String[] args) throws Exception {
+         try (ServerSocket serverSocket = new ServerSocket(5050)) {
 
-        CallCounter counter = new CallCounter();
-        AtomicInteger realCountNumber = new AtomicInteger();
+             System.out.println("Server started");
 
-        RaceExample callable01 = new RaceExample(counter, realCountNumber);
-        RaceExample callable02 = new RaceExample(counter, realCountNumber);
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
 
-        long startTime = (new Date()).getTime();
+                System.out.println("Client connected: " + clientSocket);
 
-        Future<Integer> future01 = executorService.submit(callable01);
-        Future<Integer> future02 = executorService.submit(callable02);
+                SocketThread ClientHandler = new SocketThread(clientSocket);
 
-        System.out.println("Future01: " + future01.get());
-        System.out.println("Future02: " + future02.get());
-        System.out.println("RealCountNumber: " + realCountNumber);
-
-        long finishTime = (new Date()).getTime();
-        System.out.println("Time spent: " + (finishTime - startTime));
-        executorService.shutdown();
+                ClientHandler.start();
+            }
+         }
     }
 
-    private static class RaceExample implements Callable<Integer> {
-        private final AtomicInteger realCountNumber;
-        private final CallCounter counter;
 
-        private RaceExample(CallCounter counter, AtomicInteger realCountNumber) {
-            this.realCountNumber = realCountNumber;
-            this.counter = counter;
-        }
+    private static class SocketThread extends Thread {
+        private final Socket clientSocket;
+
+
+        private SocketThread(Socket clientSocket) {this.clientSocket = clientSocket;}
 
         @Override
-        public Integer call() throws Exception {
-            while (realCountNumber.incrementAndGet() < HUNDRED_MILLION) {
-                counter.increment();
+        public void run() {
+            // Выводим информацию о запущенном потоке
+            System.out.println("Run: " + this.getName());
+            try (
+                    PrintWriter output = new PrintWriter(clientSocket.getOutputStream(), true);
+                    BufferedReader input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
+            ) {
+                String inputLine;
+                // Читаем данные от клиента и отправляем их обратно
+                while ((inputLine = input.readLine()) != null) {
+                    output.println(inputLine);
+                    // Если клиент отправил "Bye.", завершаем соединение
+                    if (inputLine.equals("Bye.")) {
+                        break;
+                    }
+                    // Закрываем соединение с клиентом
+                }
+                clientSocket.close();
+
+                System.out.println("Client disconnected: " + clientSocket);
+
+            } catch (IOException e) {
+                // В случае ошибки выводим информацию об ошибке и завершаем программу
+                e.printStackTrace();
+                System.exit(1);
             }
-            return counter.getCount();
         }
     }
 }
